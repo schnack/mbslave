@@ -4,5 +4,5 @@ go 1.13
 
 require (
 	github.com/goburrow/serial v0.1.0
-	github.com/schnack/gotest v0.6.1
+	github.com/schnack/gotest v0.7.1
 )

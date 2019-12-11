@@ -6,141 +6,109 @@ import (
 )
 
 type RtuRequest struct {
-	raw []byte
+	SlaveId   uint8
+	Function  uint8
+	Address   uint16
+	Quantity  uint16
+	CountByte uint8
+	Data      []byte
+	CRC       uint16
+	raw       []byte
 }
 
-func (rr *RtuRequest) GetSlaveId() (uint8, error) {
-	if len(rr.raw) > 0 {
-		return rr.raw[0], nil
-	}
-	return 0, fmt.Errorf("slaveId not found")
+func NewRtuRequest(b []byte) (Request, error) {
+	request := &RtuRequest{raw: b}
+	err := request.parse()
+	return request, err
 }
 
-func (rr *RtuRequest) GetFunction() (uint8, error) {
-	if len(rr.raw) > 1 {
-		switch rr.raw[1] {
-		case FuncReadDiscreteInputs, FuncReadCoils, FuncWriteSingleCoil, FuncWriteMultipleCoils, FuncReadInputRegisters, FuncReadHoldingRegisters, FuncWriteSingleRegister, FuncWriteMultipleRegisters:
-			return rr.raw[1], nil
-		default:
-			return 0, fmt.Errorf("function not found")
-		}
+func (rr *RtuRequest) parse() error {
+	countFrame := len(rr.raw)
+	if countFrame < 4 {
+		return fmt.Errorf("frame damaged")
 	}
-	return 0, fmt.Errorf("function not found")
-}
 
-func (rr *RtuRequest) GetAddress() (uint16, error) {
-	if len(rr.raw) > 3 {
-		return binary.BigEndian.Uint16(rr.raw[2:4]), nil
-	}
-	return 0, fmt.Errorf("address not found")
-}
+	rr.SlaveId = rr.raw[0]
+	rr.Function = rr.raw[1]
+	rr.Address = binary.BigEndian.Uint16(rr.raw[2:4])
 
-func (rr *RtuRequest) GetQuantity() (uint16, error) {
-	f, err := rr.GetFunction()
-	if err != nil {
-		return 0, err
-	}
-	if len(rr.raw) > 5 {
-		switch f {
-		case FuncWriteSingleCoil, FuncWriteSingleRegister:
-			return 1, nil
-		case FuncReadDiscreteInputs, FuncReadCoils, FuncWriteMultipleCoils, FuncReadInputRegisters, FuncReadHoldingRegisters, FuncWriteMultipleRegisters:
-			return binary.BigEndian.Uint16(rr.raw[4:6]), nil
-		default:
-			return 0, fmt.Errorf("function not support quantity")
-		}
-
-	}
-	return 0, fmt.Errorf("quantity not found")
-}
-
-func (rr *RtuRequest) GetCountByte() (uint8, error) {
-	f, err := rr.GetFunction()
-	if err != nil {
-		return 0, err
-	}
-	if len(rr.raw) > 6 {
-		switch f {
-		case FuncWriteMultipleCoils, FuncWriteMultipleRegisters:
-			return rr.raw[6], nil
-		default:
-			return 0, fmt.Errorf("function not support count byte")
-		}
-	}
-	return 0, fmt.Errorf("count bytes not found")
-}
-
-func (rr *RtuRequest) GetData() ([]byte, error) {
-	f, err := rr.GetFunction()
-	if err != nil {
-		return nil, err
-	}
-	switch f {
-	case FuncReadCoils, FuncReadDiscreteInputs, FuncReadInputRegisters, FuncReadHoldingRegisters:
-		return []byte{}, nil
+	switch rr.Function {
 	case FuncWriteSingleCoil, FuncWriteSingleRegister:
-		if len(rr.raw) > 5 {
-			return rr.raw[4:6], nil
-		} else {
-			return nil, fmt.Errorf("data not found")
+		if countFrame != 8 {
+			return fmt.Errorf("frame damaged")
 		}
+		rr.Quantity = 1
+		rr.Data = rr.raw[4:6]
+		rr.CRC = binary.LittleEndian.Uint16(rr.raw[6:8])
+
 	case FuncWriteMultipleCoils, FuncWriteMultipleRegisters:
-		count, err := rr.GetCountByte()
-		if err != nil {
-			return nil, err
+		if countFrame < 7 {
+			return fmt.Errorf("frame damaged")
 		}
-		if len(rr.raw) > (6 + int(count)) {
-			return rr.raw[7 : 7+int(count)], nil
-		} else {
-			return nil, fmt.Errorf("data not found")
+		rr.Quantity = binary.BigEndian.Uint16(rr.raw[4:6])
+		rr.CountByte = rr.raw[6]
+
+		if countFrame != (9 + int(rr.CountByte)) {
+			return fmt.Errorf("frame damaged")
 		}
+		rr.Data = rr.raw[7 : 7+int(rr.CountByte)]
+
+		rr.CRC = binary.LittleEndian.Uint16(rr.raw[7+int(rr.CountByte) : 7+int(rr.CountByte)+2])
+
+	case FuncReadDiscreteInputs, FuncReadCoils, FuncReadInputRegisters, FuncReadHoldingRegisters:
+		if countFrame != 8 {
+			return fmt.Errorf("frame damaged")
+		}
+		rr.Quantity = binary.BigEndian.Uint16(rr.raw[4:6])
+		rr.CRC = binary.LittleEndian.Uint16(rr.raw[6:8])
+
 	default:
-		return nil, fmt.Errorf("function not support quantity")
+		return fmt.Errorf("function not found")
 	}
+
+	if err := rr.Validate(); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (rr *RtuRequest) GetCrc() (uint16, error) {
-	f, err := rr.GetFunction()
-	if err != nil {
-		return 0, err
-	}
-	switch f {
-	case FuncReadCoils, FuncReadDiscreteInputs, FuncReadInputRegisters, FuncReadHoldingRegisters:
-		if len(rr.raw) > 7 {
-			return binary.LittleEndian.Uint16(rr.raw[6:8]), nil
-		} else {
-			return 0, fmt.Errorf("crc not found")
-		}
-
-	case FuncWriteSingleCoil, FuncWriteSingleRegister:
-		if len(rr.raw) > 7 {
-			return binary.LittleEndian.Uint16(rr.raw[6:8]), nil
-		} else {
-			return 0, fmt.Errorf("crc not found")
-		}
-	case FuncWriteMultipleCoils, FuncWriteMultipleRegisters:
-		count, err := rr.GetCountByte()
-		if err != nil {
-			return 0, err
-		}
-		if len(rr.raw) > (8 + int(count)) {
-			return binary.LittleEndian.Uint16(rr.raw[7+int(count) : 7+int(count)+2]), nil
-		} else {
-			return 0, fmt.Errorf("crc not found")
-		}
-	default:
-		return 0, fmt.Errorf("function not support quantity")
-	}
+func (rr *RtuRequest) GetSlaveId() uint8 {
+	return rr.SlaveId
 }
 
-func (rr *RtuRequest) Validate() bool {
-	crc, err := rr.GetCrc()
-	if err != nil {
-		return false
-	}
-	return crc == CalcCRC(rr.raw[:len(rr.raw)-2])
+func (rr *RtuRequest) GetFunction() uint8 {
+	return rr.Function
+
 }
 
-func (rr *RtuRequest) GetRaw() []byte {
+func (rr *RtuRequest) GetAddress() uint16 {
+	return rr.Address
+}
+
+func (rr *RtuRequest) GetQuantity() uint16 {
+	return rr.Quantity
+}
+
+func (rr *RtuRequest) GetCountByte() uint8 {
+	return rr.CountByte
+}
+
+func (rr *RtuRequest) GetData() []byte {
+	return rr.Data
+}
+
+func (rr *RtuRequest) GetCrc() uint16 {
+	return rr.CRC
+}
+
+func (rr *RtuRequest) Validate() error {
+	calc := CalcCRC(rr.raw[:len(rr.raw)-2])
+	if rr.GetCrc() != calc {
+		return fmt.Errorf("crc: 0x%04x, calc: 0x%04x", rr.GetCrc(), calc)
+	}
+	return nil
+}
+
+func (rr *RtuRequest) GetADU() []byte {
 	return rr.raw
 }
