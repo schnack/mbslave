@@ -9,29 +9,18 @@ import (
 
 type RtuTransport struct {
 	Config     *serial.Config
-	SlaveId    uint8
 	handler    func(request Request) Response
 	FrameDelay time.Duration
 	Port       serial.Port
 }
 
-func NewRtuTransport(slaveid uint8, config *serial.Config) Transport {
+func NewRtuTransport(config *serial.Config, handler func(request Request) Response) Transport {
 	return &RtuTransport{
 		Config:     config,
-		SlaveId:    slaveid,
-		handler:    nil,
+		handler:    handler,
 		FrameDelay: RtuFrameDelay(config.BaudRate),
 		Port:       serial.New(),
 	}
-}
-
-func RtuFrameDelay(baudRate int) (frameDelay time.Duration) {
-	if baudRate <= 0 || baudRate > 19200 {
-		frameDelay = 1750 * time.Microsecond
-	} else {
-		frameDelay = time.Duration(35000000/baudRate) * time.Microsecond
-	}
-	return
 }
 
 func (rt *RtuTransport) Listen() (exitError error) {
@@ -83,10 +72,6 @@ func (rt *RtuTransport) Listen() (exitError error) {
 	return
 }
 
-func (rt *RtuTransport) HandlerFunc(f func(request Request) Response) {
-	rt.handler = f
-}
-
 // читаем по байту для отслеживания таймингов modbus
 func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, wg *sync.WaitGroup) <-chan error {
 	c := make(chan error)
@@ -117,14 +102,21 @@ func (*RtuTransport) getFrame(buff *bytes.Buffer, mu sync.Mutex) []byte {
 
 func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	adu := rt.getFrame(buff, muBuff)
-	if request, err := NewRtuRequest(adu); err == nil && (request.GetSlaveId() == rt.SlaveId || request.GetSlaveId() == 0xff) {
-		response := rt.handler(request)
-		if adu, err := response.GetADU(); err == nil && request.GetSlaveId() != 0xff {
-			if _, err := rt.Port.Write(adu); err != nil {
-				return err
-			}
-			time.Sleep(rt.FrameDelay)
+	if adu == nil {
+		return nil
+	}
+
+	response := rt.handler(NewRtuRequest(adu))
+
+	if response == nil {
+		return nil
+	}
+
+	if adu, err := response.GetADU(); err == nil {
+		if _, err := rt.Port.Write(adu); err != nil {
+			return err
 		}
+		time.Sleep(rt.FrameDelay)
 	}
 	return nil
 }

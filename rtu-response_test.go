@@ -106,7 +106,7 @@ func TestRtuResponse_GetADU(t *testing.T) {
 		t.Error(err)
 	}
 
-	response.Function = ExceptionReadCoils
+	response.Function = ExceptionFunction(FuncReadCoils)
 	response.Err = 0x02
 
 	data, err = response.GetADU()

@@ -16,13 +16,12 @@ type RtuRequest struct {
 	raw       []byte
 }
 
-func NewRtuRequest(b []byte) (Request, error) {
+func NewRtuRequest(b []byte) Request {
 	request := &RtuRequest{raw: b}
-	err := request.parse()
-	return request, err
+	return request
 }
 
-func (rr *RtuRequest) parse() error {
+func (rr *RtuRequest) Parse() error {
 	countFrame := len(rr.raw)
 	if countFrame < 4 {
 		return fmt.Errorf("frame damaged")
@@ -30,13 +29,13 @@ func (rr *RtuRequest) parse() error {
 
 	rr.SlaveId = rr.raw[0]
 	rr.Function = rr.raw[1]
-	rr.Address = binary.BigEndian.Uint16(rr.raw[2:4])
 
 	switch rr.Function {
 	case FuncWriteSingleCoil, FuncWriteSingleRegister:
 		if countFrame != 8 {
 			return fmt.Errorf("frame damaged")
 		}
+		rr.Address = binary.BigEndian.Uint16(rr.raw[2:4])
 		rr.Quantity = 1
 		rr.Data = rr.raw[4:6]
 		rr.CRC = binary.LittleEndian.Uint16(rr.raw[6:8])
@@ -45,6 +44,7 @@ func (rr *RtuRequest) parse() error {
 		if countFrame < 7 {
 			return fmt.Errorf("frame damaged")
 		}
+		rr.Address = binary.BigEndian.Uint16(rr.raw[2:4])
 		rr.Quantity = binary.BigEndian.Uint16(rr.raw[4:6])
 		rr.CountByte = rr.raw[6]
 
@@ -59,11 +59,13 @@ func (rr *RtuRequest) parse() error {
 		if countFrame != 8 {
 			return fmt.Errorf("frame damaged")
 		}
+		rr.Address = binary.BigEndian.Uint16(rr.raw[2:4])
 		rr.Quantity = binary.BigEndian.Uint16(rr.raw[4:6])
 		rr.CRC = binary.LittleEndian.Uint16(rr.raw[6:8])
 
 	default:
-		return fmt.Errorf("function not found")
+		rr.Data = rr.raw[2 : len(rr.raw)-2]
+		rr.CRC = binary.LittleEndian.Uint16(rr.raw[len(rr.raw)-2:])
 	}
 
 	if err := rr.Validate(); err != nil {
@@ -72,7 +74,11 @@ func (rr *RtuRequest) parse() error {
 	return nil
 }
 
+// GetSlaveId - returns the address of the device even if the ADU is not parsed
 func (rr *RtuRequest) GetSlaveId() uint8 {
+	if len(rr.raw) > 0 && rr.Function == 0 {
+		return rr.raw[0]
+	}
 	return rr.SlaveId
 }
 

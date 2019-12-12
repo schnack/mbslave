@@ -10,4 +10,5 @@ type Request interface {
 	GetCrc() uint16
 	Validate() error
 	GetADU() []byte
+	Parse() error
 }

@@ -8,20 +8,14 @@ import (
 	"testing"
 )
 
-func TestRtuFrameDelay(t *testing.T) {
-	if err := gotest.Expect(RtuFrameDelay(9600).String()).Eq("3.645ms"); err != nil {
-		t.Error(err)
-	}
-}
-
 func TestRtuTransport_Listen(t *testing.T) {
 	port := NewFixturePort([]byte{0x01, 0x05, 0x00, 0x01, 0xff, 0x00, 0xdd, 0xfa}, false, nil)
 	rt := &RtuTransport{
 		Config:     &serial.Config{},
-		SlaveId:    0x01,
 		FrameDelay: RtuFrameDelay(9600),
 		Port:       port,
 		handler: func(request Request) Response {
+			_ = request.Parse()
 			return &RtuResponse{
 				SlaveId:  request.GetSlaveId(),
 				Function: request.GetFunction(),

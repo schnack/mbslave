@@ -13,6 +13,16 @@ type RtuResponse struct {
 	Data     []byte
 }
 
+func NewRtuResponse(slaveId, function uint8, address uint16, data []byte, errCode uint8) Response {
+	return &RtuResponse{
+		SlaveId:  slaveId,
+		Function: function,
+		Address:  address,
+		Err:      errCode,
+		Data:     data,
+	}
+}
+
 func (rr *RtuResponse) GetSlaveId() uint8 {
 	return rr.SlaveId
 }
@@ -54,15 +64,21 @@ func (rr *RtuResponse) GetADU() (b []byte, err error) {
 		} else {
 			return nil, fmt.Errorf("there is no data to answer")
 		}
-	case ExceptionReadCoils, ExceptionReadDiscreteInputs, ExceptionReadHoldingRegisters, ExceptionReadInputRegisters,
-		ExceptionWriteSingleCoil, ExceptionWriteSingleRegister, ExceptionWriteMultipleCoils, ExceptionWriteMultipleRegisters:
+	case ExceptionFunction(FuncReadCoils),
+		ExceptionFunction(FuncReadDiscreteInputs),
+		ExceptionFunction(FuncReadHoldingRegisters),
+		ExceptionFunction(FuncReadInputRegisters),
+		ExceptionFunction(FuncWriteSingleCoil),
+		ExceptionFunction(FuncWriteSingleRegister),
+		ExceptionFunction(FuncWriteMultipleCoils),
+		ExceptionFunction(FuncWriteMultipleRegisters):
 		if rr.Err != 0 {
 			b = append(b, rr.Err)
 		} else {
 			return nil, fmt.Errorf("the error cannot be 0")
 		}
 	default:
-		return nil, fmt.Errorf("sorry, this function is not supported")
+		b = append(b, rr.Data...)
 	}
 
 	crc := make([]byte, 2)
