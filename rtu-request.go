@@ -82,9 +82,12 @@ func (rr *RtuRequest) GetSlaveId() uint8 {
 	return rr.SlaveId
 }
 
+// GetFunction - returns the function
 func (rr *RtuRequest) GetFunction() uint8 {
+	if len(rr.raw) > 1 && rr.Function == 0 {
+		return rr.raw[1]
+	}
 	return rr.Function
-
 }
 
 func (rr *RtuRequest) GetAddress() uint16 {

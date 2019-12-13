@@ -14,14 +14,9 @@ func TestRtuTransport_Listen(t *testing.T) {
 		Config:     &serial.Config{},
 		FrameDelay: RtuFrameDelay(9600),
 		Port:       port,
-		handler: func(request Request) Response {
+		handler: func(request Request, resp Response) {
 			_ = request.Parse()
-			return &RtuResponse{
-				SlaveId:  request.GetSlaveId(),
-				Function: request.GetFunction(),
-				Address:  request.GetAddress(),
-				Data:     request.GetData(),
-			}
+			resp.SetSingleWrite(request.GetAddress(), request.GetData())
 		},
 	}
 

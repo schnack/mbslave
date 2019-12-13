@@ -11,17 +11,9 @@
 //		}
 package mbslave
 
-import (
-	"math"
-)
+import "encoding/binary"
 
 const (
-	DiscretesInputAddress   = 0
-	CoilsAddress            = DiscretesInputAddress + (math.MaxUint16+1)/8
-	InputRegistersAddress   = CoilsAddress + (math.MaxUint16+1)/8
-	HoldingRegistersAddress = InputRegistersAddress + (math.MaxUint16+1)*2
-	ModBusDataEnd           = HoldingRegistersAddress + (math.MaxUint16+1)*2
-
 	FuncReadCoils              = uint8(1)
 	FuncReadDiscreteInputs     = uint8(2)
 	FuncReadHoldingRegisters   = uint8(3)
@@ -42,13 +34,16 @@ const (
 
 type DataModel interface {
 	Init()
-	Handler(req Request) Response
+	Handler(req Request, resp Response)
 }
 
 type DefaultDataModel struct {
-	SlaveId  uint8
-	raw      [ModBusDataEnd]byte
-	function [256]func(Request) Response
+	SlaveId          uint8
+	DiscreteInputs   []bool
+	Coils            []bool
+	InputRegisters   []uint16
+	HoldingRegisters []uint16
+	function         [256]func(Request, Response)
 }
 
 func (dm *DefaultDataModel) Init() {
@@ -62,61 +57,97 @@ func (dm *DefaultDataModel) Init() {
 	dm.SetFunction(FuncWriteMultipleRegisters, dm.WriteMultipleRegisters)
 }
 
-func (dm *DefaultDataModel) SetFunction(code uint8, f func(Request) Response) {
+func (dm *DefaultDataModel) SetFunction(code uint8, f func(Request, Response)) {
 	dm.function[code] = f
 }
 
-func (dm *DefaultDataModel) Handler(req Request) (response Response) {
+func (dm *DefaultDataModel) Handler(req Request, resp Response) {
 
 	if req.GetSlaveId() != dm.SlaveId && req.GetSlaveId() != 255 {
-		return response
+		resp.Unanswered(true)
+		return
 	}
 
 	if err := req.Parse(); err != nil {
-		return response
+		resp.Unanswered(true)
+		return
 	}
 
 	if dm.function[req.GetFunction()] != nil {
-		response = dm.function[req.GetFunction()](req)
+		dm.function[req.GetFunction()](req, resp)
 	} else {
-		response = NewRtuResponse(req.GetSlaveId(), req.GetFunction(), 0, nil, ErrorFunction)
+		resp.SetError(ErrorFunction)
 	}
 
 	if req.GetSlaveId() == 255 {
-		response = nil
+		resp.Unanswered(true)
 	}
-
 	return
 }
 
-func (dm *DefaultDataModel) ReadCoils(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) ReadCoils(request Request, resp Response) {
+	dm.read1bit(dm.Coils, request, resp)
 }
 
-func (dm *DefaultDataModel) ReadDiscreteInputs(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) ReadDiscreteInputs(request Request, resp Response) {
+	dm.read1bit(dm.DiscreteInputs, request, resp)
 }
 
-func (dm *DefaultDataModel) ReadHoldingRegisters(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) ReadHoldingRegisters(request Request, resp Response) {
+	dm.read16bit(dm.HoldingRegisters, request, resp)
 }
 
-func (dm *DefaultDataModel) ReadInputRegisters(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) ReadInputRegisters(request Request, resp Response) {
+	dm.read16bit(dm.InputRegisters, request, resp)
 }
 
-func (dm *DefaultDataModel) WriteSingleCoil(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) WriteSingleCoil(request Request, resp Response) {
+
 }
 
-func (dm *DefaultDataModel) WriteSingleRegister(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) WriteSingleRegister(request Request, resp Response) {
+
 }
 
-func (dm *DefaultDataModel) WriteMultipleCoils(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) WriteMultipleCoils(request Request, resp Response) {
+
 }
 
-func (dm *DefaultDataModel) WriteMultipleRegisters(request Request) Response {
-	return nil
+func (dm *DefaultDataModel) WriteMultipleRegisters(request Request, resp Response) {
+
+}
+
+func (dm *DefaultDataModel) read1bit(data []bool, request Request, resp Response) {
+	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
+	if endAddress >= uint32(len(data)) {
+		resp.SetError(ErrorAddress)
+		return
+	}
+
+	bufSize := request.GetQuantity() / 8
+	if request.GetQuantity()%8 != 0 {
+		bufSize++
+	}
+	buff := make([]byte, bufSize)
+
+	for i, value := range data[request.GetAddress():endAddress] {
+		if value {
+			buff[i/8] |= 1 << (i % 8)
+		}
+	}
+	resp.SetRead(buff)
+}
+
+func (dm *DefaultDataModel) read16bit(data []uint16, request Request, resp Response) {
+	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
+	if endAddress >= uint32(len(data)) {
+		resp.SetError(ErrorAddress)
+		return
+	}
+
+	buff := make([]byte, request.GetQuantity()*2)
+	for i, value := range data[request.GetAddress():endAddress] {
+		binary.BigEndian.PutUint16(buff[i*2:(i+1)*2], value)
+	}
+	resp.SetRead(buff)
 }

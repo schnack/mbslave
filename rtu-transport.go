@@ -9,12 +9,12 @@ import (
 
 type RtuTransport struct {
 	Config     *serial.Config
-	handler    func(request Request) Response
+	handler    func(request Request, response Response)
 	FrameDelay time.Duration
 	Port       serial.Port
 }
 
-func NewRtuTransport(config *serial.Config, handler func(request Request) Response) Transport {
+func NewRtuTransport(config *serial.Config, handler func(request Request, response Response)) Transport {
 	return &RtuTransport{
 		Config:     config,
 		handler:    handler,
@@ -105,12 +105,10 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	if adu == nil {
 		return nil
 	}
+	request := NewRtuRequest(adu)
+	response := NewRtuResponse(request)
 
-	response := rt.handler(NewRtuRequest(adu))
-
-	if response == nil {
-		return nil
-	}
+	rt.handler(request, response)
 
 	if adu, err := response.GetADU(); err == nil {
 		if _, err := rt.Port.Write(adu); err != nil {

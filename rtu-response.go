@@ -6,21 +6,43 @@ import (
 )
 
 type RtuResponse struct {
-	SlaveId  uint8
-	Function uint8
-	Address  uint16
-	Err      uint8
-	Data     []byte
+	SlaveId    uint8
+	Function   uint8
+	Address    uint16
+	Err        uint8
+	Data       []byte
+	unanswered bool
 }
 
-func NewRtuResponse(slaveId, function uint8, address uint16, data []byte, errCode uint8) Response {
+func NewRtuResponse(request Request) Response {
 	return &RtuResponse{
-		SlaveId:  slaveId,
-		Function: function,
-		Address:  address,
-		Err:      errCode,
-		Data:     data,
+		SlaveId:  request.GetSlaveId(),
+		Function: request.GetFunction(),
 	}
+}
+
+func (rr *RtuResponse) Unanswered(on bool) {
+	rr.unanswered = on
+}
+
+func (rr *RtuResponse) SetError(err uint8) {
+	rr.Function = ExceptionFunction(rr.Function)
+	rr.Err = err
+}
+
+func (rr *RtuResponse) SetRead(data []byte) {
+	rr.Data = data
+}
+
+func (rr *RtuResponse) SetSingleWrite(address uint16, data []byte) {
+	rr.Address = address
+	rr.Data = data
+}
+
+func (rr *RtuResponse) SetMultiWrite(address uint16, countReg uint16) {
+	rr.Address = address
+	rr.Data = make([]byte, 2)
+	binary.BigEndian.PutUint16(rr.Data, countReg)
 }
 
 func (rr *RtuResponse) GetSlaveId() uint8 {
@@ -44,6 +66,10 @@ func (rr *RtuResponse) GetData() []byte {
 }
 
 func (rr *RtuResponse) GetADU() (b []byte, err error) {
+	if rr.unanswered {
+		return nil, fmt.Errorf("not answer")
+	}
+
 	address := make([]byte, 2)
 	binary.BigEndian.PutUint16(address, rr.Address)
 
