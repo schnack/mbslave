@@ -11,7 +11,10 @@
 //		}
 package mbslave
 
-import "encoding/binary"
+import (
+	"encoding/binary"
+	"math"
+)
 
 const (
 	FuncReadCoils              = uint8(1)
@@ -46,7 +49,17 @@ type DefaultDataModel struct {
 	function         [256]func(Request, Response)
 }
 
+func NewDefaultDataModel(slaveId uint8) *DefaultDataModel {
+	return &DefaultDataModel{
+		SlaveId: slaveId,
+	}
+}
+
 func (dm *DefaultDataModel) Init() {
+	dm.DiscreteInputs = make([]bool, math.MaxUint16)
+	dm.Coils = make([]bool, math.MaxUint16)
+	dm.InputRegisters = make([]uint16, math.MaxUint16)
+	dm.HoldingRegisters = make([]uint16, math.MaxUint16)
 	dm.SetFunction(FuncReadCoils, dm.ReadCoils)
 	dm.SetFunction(FuncReadDiscreteInputs, dm.ReadDiscreteInputs)
 	dm.SetFunction(FuncReadHoldingRegisters, dm.ReadHoldingRegisters)
@@ -102,19 +115,56 @@ func (dm *DefaultDataModel) ReadInputRegisters(request Request, resp Response) {
 }
 
 func (dm *DefaultDataModel) WriteSingleCoil(request Request, resp Response) {
-
+	if binary.BigEndian.Uint16(request.GetData()) != 0 {
+		dm.Coils[int(request.GetAddress())] = true
+	} else {
+		dm.Coils[int(request.GetAddress())] = false
+	}
+	resp.SetSingleWrite(request.GetAddress(), request.GetData())
 }
 
 func (dm *DefaultDataModel) WriteSingleRegister(request Request, resp Response) {
-
+	dm.HoldingRegisters[int(request.GetAddress())] = binary.BigEndian.Uint16(request.GetData())
+	resp.SetSingleWrite(request.GetAddress(), request.GetData())
 }
 
 func (dm *DefaultDataModel) WriteMultipleCoils(request Request, resp Response) {
+	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
+	if endAddress >= uint32(len(dm.Coils)) {
+		resp.SetError(ErrorAddress)
+		return
+	}
 
+	for i, value := range request.GetData() {
+		for ii := 0; ii < 8; ii++ {
+			targetAddress := int(request.GetAddress()) + i*8 + ii
+			if targetAddress > int(endAddress) {
+				break
+			}
+			if value>>ii&0x01 == 1 {
+				dm.Coils[targetAddress] = true
+			} else {
+				dm.Coils[targetAddress] = false
+			}
+		}
+	}
+	resp.SetMultiWrite(request.GetAddress(), request.GetQuantity())
 }
 
 func (dm *DefaultDataModel) WriteMultipleRegisters(request Request, resp Response) {
+	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
+	if endAddress >= uint32(len(dm.Coils)) {
+		resp.SetError(ErrorAddress)
+		return
+	}
+	if len(request.GetData())%2 != 0 {
+		resp.SetError(ErrorData)
+	}
 
+	for i := 0; i <= int(request.GetQuantity()); i++ {
+		dm.HoldingRegisters[int(request.GetAddress())+i] = binary.BigEndian.Uint16(request.GetData()[i*2 : (i+1)*2])
+	}
+	resp.SetMultiWrite(request.GetAddress(), request.GetQuantity())
 }
 
 func (dm *DefaultDataModel) read1bit(data []bool, request Request, resp Response) {
