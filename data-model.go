@@ -13,7 +13,9 @@ package mbslave
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
+	"sync"
 )
 
 const (
@@ -38,15 +40,104 @@ const (
 type DataModel interface {
 	Init()
 	Handler(req Request, resp Response)
+	SetDiscreteInputs(address uint16, value bool) error
+	SetCoils(address uint16, value bool) error
+	SetHoldingRegisters(address uint16, value uint16) error
+	SetInputRegisters(address uint16, value uint16) error
+	GetDiscreteInputs(address uint16) bool
+	GetCoils(address uint16) bool
+	GetHoldingRegisters(address uint16) uint16
+	GetInputRegisters(address uint16) uint16
 }
 
 type DefaultDataModel struct {
-	SlaveId          uint8
-	DiscreteInputs   []bool
-	Coils            []bool
-	InputRegisters   []uint16
-	HoldingRegisters []uint16
-	function         [256]func(Request, Response)
+	SlaveId            uint8
+	discreteInputs     []bool
+	coils              []bool
+	inputRegisters     []uint16
+	holdingRegisters   []uint16
+	function           [256]func(Request, Response)
+	muDiscreteInputs   sync.RWMutex
+	muCoils            sync.RWMutex
+	muInputRegisters   sync.RWMutex
+	muHoldingRegisters sync.RWMutex
+}
+
+//TODO tests
+func (dm *DefaultDataModel) SetDiscreteInputs(address uint16, value bool) error {
+	dm.muDiscreteInputs.Lock()
+	defer dm.muDiscreteInputs.Unlock()
+	if len(dm.discreteInputs) > int(address) {
+		return fmt.Errorf("there is no register at this address")
+	}
+	dm.discreteInputs[int(address)] = value
+	return nil
+}
+
+func (dm *DefaultDataModel) SetCoils(address uint16, value bool) error {
+	dm.muCoils.Lock()
+	defer dm.muCoils.Unlock()
+	if len(dm.coils) > int(address) {
+		return fmt.Errorf("there is no register at this address")
+	}
+	dm.coils[int(address)] = value
+	return nil
+}
+
+func (dm *DefaultDataModel) SetHoldingRegisters(address uint16, value uint16) error {
+	dm.muHoldingRegisters.Lock()
+	defer dm.muHoldingRegisters.Unlock()
+	if len(dm.holdingRegisters) > int(address) {
+		return fmt.Errorf("there is no register at this address")
+	}
+	dm.holdingRegisters[int(address)] = value
+	return nil
+}
+
+func (dm *DefaultDataModel) SetInputRegisters(address uint16, value uint16) error {
+	dm.muInputRegisters.Lock()
+	defer dm.muInputRegisters.Unlock()
+	if len(dm.inputRegisters) > int(address) {
+		return fmt.Errorf("there is no register at this address")
+	}
+	dm.inputRegisters[int(address)] = value
+	return nil
+}
+
+func (dm *DefaultDataModel) GetDiscreteInputs(address uint16) bool {
+	dm.muDiscreteInputs.RLock()
+	defer dm.muDiscreteInputs.RUnlock()
+	if len(dm.discreteInputs) > int(address) {
+		return false
+	}
+	return dm.discreteInputs[int(address)]
+}
+
+func (dm *DefaultDataModel) GetCoils(address uint16) bool {
+	dm.muCoils.RLock()
+	defer dm.muCoils.RUnlock()
+	if len(dm.coils) > int(address) {
+		return false
+	}
+	return dm.coils[int(address)]
+}
+
+func (dm *DefaultDataModel) GetHoldingRegisters(address uint16) uint16 {
+	dm.muHoldingRegisters.RLock()
+	defer dm.muHoldingRegisters.RUnlock()
+	if len(dm.holdingRegisters) > int(address) {
+		return 0
+	}
+	return dm.holdingRegisters[int(address)]
+}
+
+func (dm *DefaultDataModel) GetInputRegisters(address uint16) uint16 {
+	dm.muInputRegisters.Lock()
+	defer dm.muInputRegisters.Unlock()
+	if len(dm.inputRegisters) > int(address) {
+		return 0
+	}
+	return dm.inputRegisters[int(address)]
 }
 
 func NewDefaultDataModel(slaveId uint8) *DefaultDataModel {
@@ -56,10 +147,10 @@ func NewDefaultDataModel(slaveId uint8) *DefaultDataModel {
 }
 
 func (dm *DefaultDataModel) Init() {
-	dm.DiscreteInputs = make([]bool, math.MaxUint16)
-	dm.Coils = make([]bool, math.MaxUint16)
-	dm.InputRegisters = make([]uint16, math.MaxUint16)
-	dm.HoldingRegisters = make([]uint16, math.MaxUint16)
+	dm.discreteInputs = make([]bool, math.MaxUint16)
+	dm.coils = make([]bool, math.MaxUint16)
+	dm.inputRegisters = make([]uint16, math.MaxUint16)
+	dm.holdingRegisters = make([]uint16, math.MaxUint16)
 	dm.SetFunction(FuncReadCoils, dm.ReadCoils)
 	dm.SetFunction(FuncReadDiscreteInputs, dm.ReadDiscreteInputs)
 	dm.SetFunction(FuncReadHoldingRegisters, dm.ReadHoldingRegisters)
@@ -99,38 +190,52 @@ func (dm *DefaultDataModel) Handler(req Request, resp Response) {
 }
 
 func (dm *DefaultDataModel) ReadCoils(request Request, resp Response) {
-	dm.read1bit(dm.Coils, request, resp)
+	dm.muCoils.RLock()
+	defer dm.muCoils.RUnlock()
+	dm.read1bit(dm.coils, request, resp)
 }
 
 func (dm *DefaultDataModel) ReadDiscreteInputs(request Request, resp Response) {
-	dm.read1bit(dm.DiscreteInputs, request, resp)
+	dm.muDiscreteInputs.RLock()
+	defer dm.muDiscreteInputs.RUnlock()
+	dm.read1bit(dm.discreteInputs, request, resp)
 }
 
 func (dm *DefaultDataModel) ReadHoldingRegisters(request Request, resp Response) {
-	dm.read16bit(dm.HoldingRegisters, request, resp)
+	dm.muHoldingRegisters.RLock()
+	defer dm.muHoldingRegisters.RUnlock()
+	dm.read16bit(dm.holdingRegisters, request, resp)
 }
 
 func (dm *DefaultDataModel) ReadInputRegisters(request Request, resp Response) {
-	dm.read16bit(dm.InputRegisters, request, resp)
+	dm.muInputRegisters.RLock()
+	defer dm.muInputRegisters.RUnlock()
+	dm.read16bit(dm.inputRegisters, request, resp)
 }
 
 func (dm *DefaultDataModel) WriteSingleCoil(request Request, resp Response) {
+	dm.muCoils.Lock()
+	defer dm.muCoils.Unlock()
 	if binary.BigEndian.Uint16(request.GetData()) != 0 {
-		dm.Coils[int(request.GetAddress())] = true
+		dm.coils[int(request.GetAddress())] = true
 	} else {
-		dm.Coils[int(request.GetAddress())] = false
+		dm.coils[int(request.GetAddress())] = false
 	}
 	resp.SetSingleWrite(request.GetAddress(), request.GetData())
 }
 
 func (dm *DefaultDataModel) WriteSingleRegister(request Request, resp Response) {
-	dm.HoldingRegisters[int(request.GetAddress())] = binary.BigEndian.Uint16(request.GetData())
+	dm.muHoldingRegisters.Lock()
+	defer dm.muHoldingRegisters.Unlock()
+	dm.holdingRegisters[int(request.GetAddress())] = binary.BigEndian.Uint16(request.GetData())
 	resp.SetSingleWrite(request.GetAddress(), request.GetData())
 }
 
 func (dm *DefaultDataModel) WriteMultipleCoils(request Request, resp Response) {
+	dm.muCoils.Lock()
+	defer dm.muCoils.Unlock()
 	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
-	if endAddress >= uint32(len(dm.Coils)) {
+	if endAddress >= uint32(len(dm.coils)) {
 		resp.SetError(ErrorAddress)
 		return
 	}
@@ -142,9 +247,9 @@ func (dm *DefaultDataModel) WriteMultipleCoils(request Request, resp Response) {
 				break
 			}
 			if value>>ii&0x01 == 1 {
-				dm.Coils[targetAddress] = true
+				dm.coils[targetAddress] = true
 			} else {
-				dm.Coils[targetAddress] = false
+				dm.coils[targetAddress] = false
 			}
 		}
 	}
@@ -152,8 +257,10 @@ func (dm *DefaultDataModel) WriteMultipleCoils(request Request, resp Response) {
 }
 
 func (dm *DefaultDataModel) WriteMultipleRegisters(request Request, resp Response) {
+	dm.muHoldingRegisters.Lock()
+	defer dm.muHoldingRegisters.Unlock()
 	endAddress := uint32(request.GetAddress()) + uint32(request.GetQuantity())
-	if endAddress >= uint32(len(dm.Coils)) {
+	if endAddress >= uint32(len(dm.coils)) {
 		resp.SetError(ErrorAddress)
 		return
 	}
@@ -162,7 +269,7 @@ func (dm *DefaultDataModel) WriteMultipleRegisters(request Request, resp Respons
 	}
 
 	for i := 0; i <= int(request.GetQuantity()); i++ {
-		dm.HoldingRegisters[int(request.GetAddress())+i] = binary.BigEndian.Uint16(request.GetData()[i*2 : (i+1)*2])
+		dm.holdingRegisters[int(request.GetAddress())+i] = binary.BigEndian.Uint16(request.GetData()[i*2 : (i+1)*2])
 	}
 	resp.SetMultiWrite(request.GetAddress(), request.GetQuantity())
 }
