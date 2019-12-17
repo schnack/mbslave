@@ -48,6 +48,10 @@ type DataModel interface {
 	GetCoils(address uint16) bool
 	GetHoldingRegisters(address uint16) uint16
 	GetInputRegisters(address uint16) uint16
+	LengthDiscreteInputs() int
+	LengthCoils() int
+	LengthInputRegisters() int
+	LengthHoldingRegisters() int
 }
 
 type DefaultDataModel struct {
