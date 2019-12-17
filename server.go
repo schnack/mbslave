@@ -10,13 +10,12 @@ type Server struct {
 }
 
 func NewRtuServer(config serial.Config, dataModel DataModel) *Server {
-	return &Server{
-		DataModel: dataModel,
-		Transport: NewRtuTransport(config, dataModel.Handler),
-	}
+	transport := NewRtuTransport(config)
+	return NewServer(transport, dataModel)
 }
 
 func NewServer(transport Transport, dataModel DataModel) *Server {
+	transport.SetHandler(dataModel.Handler)
 	return &Server{
 		DataModel: dataModel,
 		Transport: transport,

@@ -15,13 +15,16 @@ type RtuTransport struct {
 	Log     logrus.FieldLogger
 }
 
-func NewRtuTransport(config serial.Config, handler func(request Request, response Response)) *RtuTransport {
+func NewRtuTransport(config serial.Config) *RtuTransport {
 	return &RtuTransport{
-		Config:  config,
-		handler: handler,
-		Port:    serial.New(),
-		Log:     logrus.StandardLogger(),
+		Config: config,
+		Port:   serial.New(),
+		Log:    logrus.StandardLogger(),
 	}
+}
+
+func (rt *RtuTransport) SetHandler(f func(request Request, response Response)) {
+	rt.handler = f
 }
 
 func (rt *RtuTransport) Listen() (exitError error) {
@@ -112,7 +115,9 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	request := NewRtuRequest(adu)
 	response := NewRtuResponse(request)
 
-	rt.handler(request, response)
+	if rt.handler != nil {
+		rt.handler(request, response)
+	}
 
 	if adu, err := response.GetADU(); err == nil {
 		rt.Log.Debugf("response: %02x", adu)
