@@ -15,7 +15,7 @@ type RtuTransport struct {
 	Log     logrus.FieldLogger
 }
 
-func NewRtuTransport(config serial.Config, handler func(request Request, response Response)) Transport {
+func NewRtuTransport(config serial.Config, handler func(request Request, response Response)) *RtuTransport {
 	return &RtuTransport{
 		Config:  config,
 		handler: handler,

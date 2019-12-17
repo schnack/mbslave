@@ -16,6 +16,13 @@ func NewRtuServer(config serial.Config, dataModel DataModel) *Server {
 	}
 }
 
+func NewServer(transport Transport, dataModel DataModel) *Server {
+	return &Server{
+		DataModel: dataModel,
+		Transport: transport,
+	}
+}
+
 func (s *Server) Listen() error {
 	s.DataModel.Init()
 	return s.Transport.Listen()
