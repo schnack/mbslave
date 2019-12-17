@@ -3,31 +3,33 @@ package mbslave
 import (
 	"bytes"
 	"github.com/goburrow/serial"
+	"github.com/sirupsen/logrus"
 	"sync"
 	"time"
 )
 
 type RtuTransport struct {
-	Config     *serial.Config
-	handler    func(request Request, response Response)
-	FrameDelay time.Duration
-	Port       serial.Port
+	serial.Config
+	handler func(request Request, response Response)
+	Port    serial.Port
+	Log     logrus.FieldLogger
 }
 
-func NewRtuTransport(config *serial.Config, handler func(request Request, response Response)) Transport {
+func NewRtuTransport(config serial.Config, handler func(request Request, response Response)) Transport {
 	return &RtuTransport{
-		Config:     config,
-		handler:    handler,
-		FrameDelay: RtuFrameDelay(config.BaudRate),
-		Port:       serial.New(),
+		Config:  config,
+		handler: handler,
+		Port:    serial.New(),
+		Log:     logrus.StandardLogger(),
 	}
 }
 
 func (rt *RtuTransport) Listen() (exitError error) {
-	if err := rt.Port.Open(rt.Config); err != nil {
+	if err := rt.Port.Open(&rt.Config); err != nil {
 		return err
 	}
 	defer rt.Port.Close()
+	rt.Log.Debugf("start listing %s %d %d %d %s ", rt.Address, rt.BaudRate, rt.DataBits, rt.StopBits, rt.Parity)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -58,7 +60,7 @@ func (rt *RtuTransport) Listen() (exitError error) {
 				//Если будут проблемы с чтением wgRead.Wait()  fmt.Printf("%p on\n", &wgRead)
 
 			// Ждем окончание ADU и парсим его
-			case <-time.After(rt.FrameDelay):
+			case <-time.After(rt.rtuFrameDelay()):
 				if err := rt.newFrame(buff, muBuff); err != nil {
 					exitError = err
 					return
@@ -105,16 +107,28 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	if adu == nil {
 		return nil
 	}
+
+	rt.Log.Debugf("request: %02x", adu)
 	request := NewRtuRequest(adu)
 	response := NewRtuResponse(request)
 
 	rt.handler(request, response)
 
 	if adu, err := response.GetADU(); err == nil {
+		rt.Log.Debugf("response: %02x", adu)
 		if _, err := rt.Port.Write(adu); err != nil {
 			return err
 		}
-		time.Sleep(rt.FrameDelay)
+		time.Sleep(rt.rtuFrameDelay())
 	}
 	return nil
+}
+
+func (rt *RtuTransport) rtuFrameDelay() (frameDelay time.Duration) {
+	if rt.BaudRate <= 0 || rt.BaudRate > 19200 {
+		frameDelay = 1750 * time.Microsecond
+	} else {
+		frameDelay = time.Duration(35000000/rt.BaudRate) * time.Microsecond
+	}
+	return
 }

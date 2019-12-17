@@ -1,20 +1,22 @@
 package mbslave
 
-import "github.com/goburrow/serial"
+import (
+	"github.com/goburrow/serial"
+)
 
 type Server struct {
 	DataModel DataModel
-	transport Transport
+	Transport Transport
 }
 
-func NewRtuServer(config *serial.Config, dataModel DataModel) *Server {
+func NewRtuServer(config serial.Config, dataModel DataModel) *Server {
 	return &Server{
 		DataModel: dataModel,
-		transport: NewRtuTransport(config, dataModel.Handler),
+		Transport: NewRtuTransport(config, dataModel.Handler),
 	}
 }
 
 func (s *Server) Listen() error {
 	s.DataModel.Init()
-	return s.transport.Listen()
+	return s.Transport.Listen()
 }
