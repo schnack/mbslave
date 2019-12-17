@@ -64,6 +64,23 @@ type DefaultDataModel struct {
 }
 
 //TODO tests
+
+func (dm *DefaultDataModel) LengthDiscreteInputs() int {
+	return len(dm.discreteInputs)
+}
+
+func (dm *DefaultDataModel) LengthCoils() int {
+	return len(dm.coils)
+}
+
+func (dm *DefaultDataModel) LengthInputRegisters() int {
+	return len(dm.inputRegisters)
+}
+
+func (dm *DefaultDataModel) LengthHoldingRegisters() int {
+	return len(dm.holdingRegisters)
+}
+
 func (dm *DefaultDataModel) SetDiscreteInputs(address uint16, value bool) error {
 	dm.muDiscreteInputs.Lock()
 	defer dm.muDiscreteInputs.Unlock()
