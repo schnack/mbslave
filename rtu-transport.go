@@ -2,6 +2,7 @@ package mbslave
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/goburrow/serial"
 	"github.com/sirupsen/logrus"
 	"sync"
@@ -79,8 +80,7 @@ func (rt *RtuTransport) Listen() (exitError error) {
 
 // читаем по байту для отслеживания таймингов modbus
 func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, wg *sync.WaitGroup) <-chan error {
-	c := make(chan error)
-
+	c := make(chan error, 1)
 	go func() {
 		defer wg.Done()
 		b := make([]byte, 1)
@@ -89,11 +89,11 @@ func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, w
 			mu.Lock()
 			data.Write(b)
 			mu.Unlock()
+			c <- err
+		} else {
+			c <- fmt.Errorf("unable to read data from serial port")
 		}
-
-		c <- err
 	}()
-
 	return c
 }
 
@@ -107,20 +107,37 @@ func (*RtuTransport) getFrame(buff *bytes.Buffer, mu sync.Mutex) []byte {
 
 func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	adu := rt.getFrame(buff, muBuff)
-	if adu == nil {
+	if len(adu) == 0 {
 		return nil
 	}
 
-	rt.Log.Debugf("request: %02x", adu)
 	request := NewRtuRequest(adu)
+	rt.Log.Debugf("<- in  raw: [% x]", adu)
+
 	response := NewRtuResponse(request)
 
 	if rt.handler != nil {
 		rt.handler(request, response)
 	}
+	rt.Log.Debugf("request   id: %02x func: %02x addr: %04x quat: %04x size: %02x data: [% x] crc: %04x",
+		request.GetSlaveId(),
+		request.GetFunction(),
+		request.GetAddress(),
+		request.GetQuantity(),
+		request.GetCountByte(),
+		request.GetData(),
+		request.GetCrc(),
+	)
 
 	if adu, err := response.GetADU(); err == nil {
-		rt.Log.Debugf("response: %02x", adu)
+		rt.Log.Debugf("response  id: %02x func: %02x addr: %04x data: [% x] err: %02x",
+			response.GetSlaveId(),
+			response.GetFunction(),
+			response.GetAddress(),
+			response.GetData(),
+			response.GetError(),
+		)
+		rt.Log.Debugf("-> out raw: [% x]", adu)
 		if _, err := rt.Port.Write(adu); err != nil {
 			return err
 		}

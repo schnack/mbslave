@@ -21,7 +21,7 @@ func TestRtuTransport_Listen(t *testing.T) {
 		Log: logrus.StandardLogger(),
 	}
 
-	if err := gotest.Expect(rt.Listen()).Error("EOF"); err != nil {
+	if err := gotest.Expect(rt.Listen()).Error("unable to read data from serial port"); err != nil {
 		t.Error(err)
 	}
 

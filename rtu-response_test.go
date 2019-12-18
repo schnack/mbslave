@@ -79,11 +79,11 @@ func TestRtuResponse_SetMultiWrite(t *testing.T) {
 
 func TestRtuResponse_GetSlaveId(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0x0002,
-		Err:      0x01,
-		Data:     []byte{0x01, 0x02},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0x0002,
+		err:      0x01,
+		data:     []byte{0x01, 0x02},
 	}
 
 	if err := gotest.Expect(response.GetSlaveId()).Eq(uint8(0x0A)); err != nil {
@@ -93,11 +93,11 @@ func TestRtuResponse_GetSlaveId(t *testing.T) {
 
 func TestRtuResponse_GetFunction(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0x0002,
-		Err:      0x01,
-		Data:     []byte{0x01, 0x02},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0x0002,
+		err:      0x01,
+		data:     []byte{0x01, 0x02},
 	}
 
 	if err := gotest.Expect(response.GetFunction()).Eq(FuncReadCoils); err != nil {
@@ -107,11 +107,11 @@ func TestRtuResponse_GetFunction(t *testing.T) {
 
 func TestRtuResponse_GetAddress(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0x0002,
-		Err:      0x01,
-		Data:     []byte{0x01, 0x02},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0x0002,
+		err:      0x01,
+		data:     []byte{0x01, 0x02},
 	}
 
 	if err := gotest.Expect(response.GetAddress()).Eq(uint16(0x0002)); err != nil {
@@ -121,11 +121,11 @@ func TestRtuResponse_GetAddress(t *testing.T) {
 
 func TestRtuResponse_GetError(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0x0002,
-		Err:      0x01,
-		Data:     []byte{0x01, 0x02},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0x0002,
+		err:      0x01,
+		data:     []byte{0x01, 0x02},
 	}
 
 	if err := gotest.Expect(response.GetError()).Eq(uint8(0x01)); err != nil {
@@ -135,11 +135,11 @@ func TestRtuResponse_GetError(t *testing.T) {
 
 func TestRtuResponse_GetData(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0x0002,
-		Err:      0x01,
-		Data:     []byte{0x01, 0x02},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0x0002,
+		err:      0x01,
+		data:     []byte{0x01, 0x02},
 	}
 
 	if err := gotest.Expect(response.GetData()).Eq([]byte{0x01, 0x02}); err != nil {
@@ -149,11 +149,11 @@ func TestRtuResponse_GetData(t *testing.T) {
 
 func TestRtuResponse_GetADU(t *testing.T) {
 	response := RtuResponse{
-		SlaveId:  0x0A,
-		Function: FuncReadCoils,
-		Address:  0,
-		Err:      0,
-		Data:     []byte{0x01},
+		slaveId:  0x0A,
+		function: FuncReadCoils,
+		address:  0,
+		err:      0,
+		data:     []byte{0x01},
 	}
 
 	data, err := response.GetADU()
@@ -165,9 +165,9 @@ func TestRtuResponse_GetADU(t *testing.T) {
 		t.Error(err)
 	}
 
-	response.Function = FuncWriteSingleCoil
-	response.Address = 0x0001
-	response.Data = []byte{0xff, 0x00}
+	response.function = FuncWriteSingleCoil
+	response.address = 0x0001
+	response.data = []byte{0xff, 0x00}
 
 	data, err = response.GetADU()
 	if err := gotest.Expect(err).Nil(); err != nil {
@@ -178,8 +178,8 @@ func TestRtuResponse_GetADU(t *testing.T) {
 		t.Error(err)
 	}
 
-	response.Function = ExceptionFunction(FuncReadCoils)
-	response.Err = 0x02
+	response.function = ExceptionFunction(FuncReadCoils)
+	response.err = 0x02
 
 	data, err = response.GetADU()
 	if err := gotest.Expect(err).Nil(); err != nil {

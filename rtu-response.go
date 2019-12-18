@@ -6,18 +6,20 @@ import (
 )
 
 type RtuResponse struct {
-	SlaveId    uint8
-	Function   uint8
-	Address    uint16
-	Err        uint8
-	Data       []byte
+	slaveId  uint8
+	function uint8
+	address  uint16
+	err      uint8
+	data     []byte
+	crc      uint16
+
 	unanswered bool
 }
 
 func NewRtuResponse(request Request) Response {
 	return &RtuResponse{
-		SlaveId:  request.GetSlaveId(),
-		Function: request.GetFunction(),
+		slaveId:  request.GetSlaveId(),
+		function: request.GetFunction(),
 	}
 }
 
@@ -26,43 +28,43 @@ func (rr *RtuResponse) Unanswered(on bool) {
 }
 
 func (rr *RtuResponse) SetError(err uint8) {
-	rr.Function = ExceptionFunction(rr.Function)
-	rr.Err = err
+	rr.function = ExceptionFunction(rr.function)
+	rr.err = err
 }
 
 func (rr *RtuResponse) SetRead(data []byte) {
-	rr.Data = data
+	rr.data = data
 }
 
 func (rr *RtuResponse) SetSingleWrite(address uint16, data []byte) {
-	rr.Address = address
-	rr.Data = data
+	rr.address = address
+	rr.data = data
 }
 
 func (rr *RtuResponse) SetMultiWrite(address uint16, countReg uint16) {
-	rr.Address = address
-	rr.Data = make([]byte, 2)
-	binary.BigEndian.PutUint16(rr.Data, countReg)
+	rr.address = address
+	rr.data = make([]byte, 2)
+	binary.BigEndian.PutUint16(rr.data, countReg)
 }
 
 func (rr *RtuResponse) GetSlaveId() uint8 {
-	return rr.SlaveId
+	return rr.slaveId
 }
 
 func (rr *RtuResponse) GetFunction() uint8 {
-	return rr.Function
+	return rr.function
 }
 
 func (rr *RtuResponse) GetAddress() uint16 {
-	return rr.Address
+	return rr.address
 }
 
 func (rr *RtuResponse) GetError() uint8 {
-	return rr.Err
+	return rr.err
 }
 
 func (rr *RtuResponse) GetData() []byte {
-	return rr.Data
+	return rr.data
 }
 
 func (rr *RtuResponse) GetADU() (b []byte, err error) {
@@ -71,22 +73,22 @@ func (rr *RtuResponse) GetADU() (b []byte, err error) {
 	}
 
 	address := make([]byte, 2)
-	binary.BigEndian.PutUint16(address, rr.Address)
+	binary.BigEndian.PutUint16(address, rr.address)
 
-	b = append(b, rr.SlaveId)
-	b = append(b, rr.Function)
-	switch rr.Function {
+	b = append(b, rr.slaveId)
+	b = append(b, rr.function)
+	switch rr.function {
 	case FuncReadCoils, FuncReadDiscreteInputs, FuncReadInputRegisters, FuncReadHoldingRegisters:
-		b = append(b, uint8(len(rr.Data)))
-		if len(rr.Data) > 0 {
-			b = append(b, rr.Data...)
+		b = append(b, uint8(len(rr.data)))
+		if len(rr.data) > 0 {
+			b = append(b, rr.data...)
 		} else {
 			return nil, fmt.Errorf("there is no data to answer")
 		}
 	case FuncWriteSingleCoil, FuncWriteSingleRegister, FuncWriteMultipleCoils, FuncWriteMultipleRegisters:
 		b = append(b, address...)
-		if len(rr.Data) > 1 {
-			b = append(b, rr.Data[0:2]...)
+		if len(rr.data) > 1 {
+			b = append(b, rr.data[0:2]...)
 		} else {
 			return nil, fmt.Errorf("there is no data to answer")
 		}
@@ -98,13 +100,13 @@ func (rr *RtuResponse) GetADU() (b []byte, err error) {
 		ExceptionFunction(FuncWriteSingleRegister),
 		ExceptionFunction(FuncWriteMultipleCoils),
 		ExceptionFunction(FuncWriteMultipleRegisters):
-		if rr.Err != 0 {
-			b = append(b, rr.Err)
+		if rr.err != 0 {
+			b = append(b, rr.err)
 		} else {
 			return nil, fmt.Errorf("the error cannot be 0")
 		}
 	default:
-		b = append(b, rr.Data...)
+		b = append(b, rr.data...)
 	}
 
 	crc := make([]byte, 2)
