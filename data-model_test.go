@@ -13,8 +13,7 @@ func TestNewDefaultDataModel(t *testing.T) {
 }
 
 func TestDefaultDataModel_Init(t *testing.T) {
-	ddm := &DefaultDataModel{}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 
 	if err := gotest.Expect(len(ddm.discreteInputs)).Eq(math.MaxUint16); err != nil {
 		t.Error(err)
@@ -60,8 +59,7 @@ func TestDefaultDataModel_Init(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadCoils(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	ddm.coils[0] = true
 	ddm.coils[2] = true
 	request := NewRtuRequest([]byte{0x01, 0x01, 0x00, 0x00, 0x00, 0x08, 0x3d, 0xcc})
@@ -79,8 +77,7 @@ func TestDefaultDataModel_ReadCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadDiscreteInputs(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	ddm.discreteInputs[0] = true
 	ddm.discreteInputs[1] = true
 	request := NewRtuRequest([]byte{0x01, 0x02, 0x00, 0x00, 0x00, 0x08, 0x79, 0xcc})
@@ -98,8 +95,7 @@ func TestDefaultDataModel_ReadDiscreteInputs(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadHoldingRegisters(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	ddm.holdingRegisters[0] = 0x0001
 	ddm.holdingRegisters[1] = 0x0002
 	request := NewRtuRequest([]byte{0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b})
@@ -117,8 +113,7 @@ func TestDefaultDataModel_ReadHoldingRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadInputRegisters(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	ddm.inputRegisters[0] = 0x0003
 	ddm.inputRegisters[1] = 0x0004
 	request := NewRtuRequest([]byte{0x01, 0x04, 0x00, 0x00, 0x00, 0x02, 0x71, 0xcb})
@@ -136,8 +131,7 @@ func TestDefaultDataModel_ReadInputRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteSingleCoil(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0x01, 0x05, 0x00, 0x00, 0xff, 0x00, 0x8c, 0x3a})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -153,8 +147,7 @@ func TestDefaultDataModel_WriteSingleCoil(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteSingleRegister(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0x01, 0x06, 0x00, 0x00, 0x01, 0x02, 0x09, 0x9b})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -170,8 +163,7 @@ func TestDefaultDataModel_WriteSingleRegister(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteMultipleCoils(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0x01, 0x0f, 0x00, 0x00, 0x00, 0x02, 0x01, 0x03, 0x9e, 0x96})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -190,8 +182,7 @@ func TestDefaultDataModel_WriteMultipleCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteMultipleRegisters(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0x01, 0x10, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x01, 0x00, 0x02, 0x23, 0xae})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -210,8 +201,7 @@ func TestDefaultDataModel_WriteMultipleRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_Handler(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0xff, 0x05, 0x00, 0x00, 0xff, 0x00, 0x99, 0xe4})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -232,8 +222,7 @@ func TestDefaultDataModel_Handler(t *testing.T) {
 }
 
 func TestDefaultDataModel_HandlerError(t *testing.T) {
-	ddm := &DefaultDataModel{SlaveId: 0x01}
-	ddm.Init()
+	ddm := NewDefaultDataModel(0x01)
 	request := NewRtuRequest([]byte{0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x40, 0x3a})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
