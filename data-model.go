@@ -52,6 +52,7 @@ type DataModel interface {
 	LengthCoils() int
 	LengthInputRegisters() int
 	LengthHoldingRegisters() int
+	SetFunction(code uint8, f func(Request, Response))
 }
 
 type DefaultDataModel struct {
