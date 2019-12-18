@@ -89,7 +89,7 @@ func (dm *DefaultDataModel) LengthHoldingRegisters() int {
 func (dm *DefaultDataModel) SetDiscreteInputs(address uint16, value bool) error {
 	dm.muDiscreteInputs.Lock()
 	defer dm.muDiscreteInputs.Unlock()
-	if len(dm.discreteInputs) > int(address) {
+	if len(dm.discreteInputs) <= int(address) {
 		return fmt.Errorf("there is no register at this address")
 	}
 	dm.discreteInputs[int(address)] = value
@@ -99,7 +99,7 @@ func (dm *DefaultDataModel) SetDiscreteInputs(address uint16, value bool) error 
 func (dm *DefaultDataModel) SetCoils(address uint16, value bool) error {
 	dm.muCoils.Lock()
 	defer dm.muCoils.Unlock()
-	if len(dm.coils) > int(address) {
+	if len(dm.coils) <= int(address) {
 		return fmt.Errorf("there is no register at this address")
 	}
 	dm.coils[int(address)] = value
@@ -109,7 +109,7 @@ func (dm *DefaultDataModel) SetCoils(address uint16, value bool) error {
 func (dm *DefaultDataModel) SetHoldingRegisters(address uint16, value uint16) error {
 	dm.muHoldingRegisters.Lock()
 	defer dm.muHoldingRegisters.Unlock()
-	if len(dm.holdingRegisters) > int(address) {
+	if len(dm.holdingRegisters) <= int(address) {
 		return fmt.Errorf("there is no register at this address")
 	}
 	dm.holdingRegisters[int(address)] = value
@@ -119,7 +119,7 @@ func (dm *DefaultDataModel) SetHoldingRegisters(address uint16, value uint16) er
 func (dm *DefaultDataModel) SetInputRegisters(address uint16, value uint16) error {
 	dm.muInputRegisters.Lock()
 	defer dm.muInputRegisters.Unlock()
-	if len(dm.inputRegisters) > int(address) {
+	if len(dm.inputRegisters) <= int(address) {
 		return fmt.Errorf("there is no register at this address")
 	}
 	dm.inputRegisters[int(address)] = value
@@ -129,7 +129,7 @@ func (dm *DefaultDataModel) SetInputRegisters(address uint16, value uint16) erro
 func (dm *DefaultDataModel) GetDiscreteInputs(address uint16) bool {
 	dm.muDiscreteInputs.RLock()
 	defer dm.muDiscreteInputs.RUnlock()
-	if len(dm.discreteInputs) > int(address) {
+	if len(dm.discreteInputs) <= int(address) {
 		return false
 	}
 	return dm.discreteInputs[int(address)]
@@ -138,7 +138,7 @@ func (dm *DefaultDataModel) GetDiscreteInputs(address uint16) bool {
 func (dm *DefaultDataModel) GetCoils(address uint16) bool {
 	dm.muCoils.RLock()
 	defer dm.muCoils.RUnlock()
-	if len(dm.coils) > int(address) {
+	if len(dm.coils) <= int(address) {
 		return false
 	}
 	return dm.coils[int(address)]
@@ -147,7 +147,7 @@ func (dm *DefaultDataModel) GetCoils(address uint16) bool {
 func (dm *DefaultDataModel) GetHoldingRegisters(address uint16) uint16 {
 	dm.muHoldingRegisters.RLock()
 	defer dm.muHoldingRegisters.RUnlock()
-	if len(dm.holdingRegisters) > int(address) {
+	if len(dm.holdingRegisters) <= int(address) {
 		return 0
 	}
 	return dm.holdingRegisters[int(address)]
@@ -156,7 +156,7 @@ func (dm *DefaultDataModel) GetHoldingRegisters(address uint16) uint16 {
 func (dm *DefaultDataModel) GetInputRegisters(address uint16) uint16 {
 	dm.muInputRegisters.Lock()
 	defer dm.muInputRegisters.Unlock()
-	if len(dm.inputRegisters) > int(address) {
+	if len(dm.inputRegisters) <= int(address) {
 		return 0
 	}
 	return dm.inputRegisters[int(address)]
