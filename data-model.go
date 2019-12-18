@@ -163,9 +163,11 @@ func (dm *DefaultDataModel) GetInputRegisters(address uint16) uint16 {
 }
 
 func NewDefaultDataModel(slaveId uint8) *DefaultDataModel {
-	return &DefaultDataModel{
+	ddm := &DefaultDataModel{
 		SlaveId: slaveId,
 	}
+	ddm.Init()
+	return ddm
 }
 
 func (dm *DefaultDataModel) Init() {

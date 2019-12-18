@@ -23,6 +23,5 @@ func NewServer(transport Transport, dataModel DataModel) *Server {
 }
 
 func (s *Server) Listen() error {
-	s.DataModel.Init()
 	return s.Transport.Listen()
 }
