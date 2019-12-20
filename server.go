@@ -1,7 +1,7 @@
 package mbslave
 
 import (
-	"github.com/goburrow/serial"
+	"go.bug.st/serial"
 )
 
 type Server struct {
@@ -9,7 +9,7 @@ type Server struct {
 	Transport Transport
 }
 
-func NewRtuServer(config serial.Config, dataModel DataModel) *Server {
+func NewRtuServer(config serial.Mode, dataModel DataModel) *Server {
 	transport := NewRtuTransport(config)
 	return NewServer(transport, dataModel)
 }

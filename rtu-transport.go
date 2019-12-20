@@ -3,24 +3,23 @@ package mbslave
 import (
 	"bytes"
 	"fmt"
-	"github.com/goburrow/serial"
 	"github.com/sirupsen/logrus"
+	"go.bug.st/serial"
 	"sync"
 	"time"
 )
 
 type RtuTransport struct {
-	serial.Config
+	serial.Mode
 	handler func(request Request, response Response)
 	Port    serial.Port
 	Log     logrus.FieldLogger
 }
 
-func NewRtuTransport(config serial.Config) *RtuTransport {
+func NewRtuTransport(config serial.Mode) *RtuTransport {
 	return &RtuTransport{
-		Config: config,
-		Port:   serial.New(),
-		Log:    logrus.StandardLogger(),
+		Mode: config,
+		Log:  logrus.StandardLogger(),
 	}
 }
 
@@ -29,11 +28,12 @@ func (rt *RtuTransport) SetHandler(f func(request Request, response Response)) {
 }
 
 func (rt *RtuTransport) Listen() (exitError error) {
-	if err := rt.Port.Open(&rt.Config); err != nil {
+	var err error
+	if rt.Port, err = serial.Open("/dev/ttyUSB0", &rt.Mode); err != nil {
 		return err
 	}
 	defer rt.Port.Close()
-	rt.Log.Debugf("start listing %s %d %d %d %s ", rt.Address, rt.BaudRate, rt.DataBits, rt.StopBits, rt.Parity)
+	rt.Log.Debugf("start listing %s %d %d %d %s ", "com3", rt.BaudRate, rt.DataBits, rt.StopBits, rt.Parity)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -83,11 +83,12 @@ func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, w
 	c := make(chan error, 1)
 	go func() {
 		defer wg.Done()
-		b := make([]byte, 1)
+		b := make([]byte, 255)
 		n, err := port.Read(b)
+		// TODO Первый байт получили засикаем время фрейма и возвращаем фрейм в канал
 		if n != 0 {
 			mu.Lock()
-			data.Write(b)
+			data.Write(b[:n])
 			mu.Unlock()
 			c <- err
 		} else {
