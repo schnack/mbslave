@@ -138,9 +138,11 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 			response.GetError(),
 		)
 		rt.Log.Debugf("-> out raw: [% x]", adu)
-		if _, err := rt.Port.Write(adu); err != nil {
-			return err
-		}
+		n, err := rt.Port.Write(adu)
+		rt.Log.Debugf("count %d, err %s", n, err)
+		//if _, err := rt.Port.Write(adu); err != nil {
+		//	return err
+		//}
 		time.Sleep(rt.rtuFrameDelay())
 	}
 	return nil
