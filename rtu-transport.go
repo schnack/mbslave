@@ -112,7 +112,7 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	}
 
 	request := NewRtuRequest(adu)
-	rt.Log.Debugf("<- in  raw: [% x]", adu)
+	rt.Log.Debugf("<- in  raw(%03d): [% x]", len(adu), adu)
 
 	response := NewRtuResponse(request)
 
@@ -137,13 +137,11 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 			response.GetData(),
 			response.GetError(),
 		)
-		rt.Log.Debugf("-> out raw: [% x]", adu)
 		n, err := rt.Port.Write(adu)
-		rt.Log.Debugf("count %d, err %s", n, err)
-		//if _, err := rt.Port.Write(adu); err != nil {
-		//	return err
-		//}
-		time.Sleep(rt.rtuFrameDelay())
+		if err != nil {
+			return err
+		}
+		rt.Log.Debugf("-> out raw(%03d): [% x]", n, adu)
 	}
 	return nil
 }
