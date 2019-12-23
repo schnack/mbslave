@@ -11,9 +11,10 @@ import (
 
 type RtuTransport struct {
 	*Config
-	handler func(request Request, response Response)
-	Port    serial.Port
-	Log     logrus.FieldLogger
+	handler        func(request Request, response Response)
+	Port           serial.Port
+	Log            logrus.FieldLogger
+	silentInterval time.Duration
 }
 
 func NewRtuTransport(config *Config) *RtuTransport {
@@ -28,8 +29,9 @@ func (rt *RtuTransport) SetHandler(f func(request Request, response Response)) {
 }
 
 func (rt *RtuTransport) Listen() (exitError error) {
+	rt.silentInterval = rt.SilentInterval()
 	var err error
-	if rt.Port, err = serial.Open(rt.Config.Port, &rt.Mode); err != nil {
+	if rt.Port, err = OpenSerialPort(rt.Config); err != nil {
 		return err
 	}
 	defer rt.Port.Close()
@@ -45,32 +47,28 @@ func (rt *RtuTransport) Listen() (exitError error) {
 		buff := new(bytes.Buffer)
 		var muBuff sync.Mutex
 
+		cb, ce := rt.readChan(rt.Port)
+
 		for {
-			// Ожидаем поток чтения
-			var wgRead sync.WaitGroup
-			wgRead.Add(1)
-
 			select {
-			// Читаем  по 1 символу
-			case final := <-rt.read(rt.Port, buff, muBuff, &wgRead):
-				// Если ошибка значит порт закрыт
-				if final != nil {
-					exitError = final
-					// Обрабатываем финальный пакет удобно для тестов
-					_ = rt.newFrame(buff, muBuff)
-					return
+			case data := <-cb:
+				muBuff.Lock()
+				buff.WriteByte(data)
+				muBuff.Unlock()
+			case exitError = <-ce:
+				// Обрабатываем финальный пакет удобно для тестов
+				for data := range cb {
+					muBuff.Lock()
+					buff.WriteByte(data)
+					muBuff.Unlock()
 				}
-
-				//Если будут проблемы с чтением wgRead.Wait()  fmt.Printf("%p on\n", &wgRead)
-
-			// Ждем окончание ADU и парсим его
-			case <-time.After(rt.rtuFrameDelay()):
+				_ = rt.newFrame(buff, muBuff)
+				return
+			case <-time.After(rt.silentInterval):
 				if err := rt.newFrame(buff, muBuff); err != nil {
 					exitError = err
 					return
 				}
-				// Ждем начало следующей ADU
-				wgRead.Wait()
 			}
 		}
 	}()
@@ -78,23 +76,29 @@ func (rt *RtuTransport) Listen() (exitError error) {
 	return
 }
 
-// читаем по байту для отслеживания таймингов modbus
-func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, wg *sync.WaitGroup) <-chan error {
-	c := make(chan error, 1)
+func (*RtuTransport) readChan(port serial.Port) (<-chan byte, <-chan error) {
+	cb := make(chan byte, 256)
+	ce := make(chan error)
+
 	go func() {
-		defer wg.Done()
-		b := make([]byte, 255)
-		n, err := port.Read(b)
-		if n != 0 {
-			mu.Lock()
-			defer mu.Unlock()
-			data.Write(b[:n])
-			c <- err
-		} else {
-			c <- fmt.Errorf("unable to read data from serial port")
+		b := make([]byte, 1)
+		defer close(cb)
+		defer close(ce)
+		for {
+			n, err := port.Read(b)
+			if err != nil {
+				ce <- err
+				return
+			}
+			if n != 0 {
+				cb <- b[0]
+			} else {
+				ce <- fmt.Errorf("unable to read data from serial port")
+				return
+			}
 		}
 	}()
-	return c
+	return cb, ce
 }
 
 // getFrame - синхронизирует буфер
@@ -149,8 +153,10 @@ func (rt *RtuTransport) newFrame(buff *bytes.Buffer, muBuff sync.Mutex) error {
 	return nil
 }
 
-func (rt *RtuTransport) rtuFrameDelay() (frameDelay time.Duration) {
-	if rt.BaudRate <= 0 || rt.BaudRate > 19200 {
+func (rt *RtuTransport) SilentInterval() (frameDelay time.Duration) {
+	if rt.Config.SilentInterval.Nanoseconds() != 0 {
+		frameDelay = rt.Config.SilentInterval
+	} else if rt.BaudRate <= 0 || rt.BaudRate > 19200 {
 		frameDelay = 1750 * time.Microsecond
 	} else {
 		frameDelay = time.Duration(35000000/rt.BaudRate) * time.Microsecond

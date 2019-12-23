@@ -8,7 +8,13 @@ import (
 )
 
 func TestNewDefaultDataModel(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 
 	if err := gotest.Expect(ddm.SlaveId).Eq(uint8(0x01)); err != nil {
 		t.Error(err)
@@ -80,7 +86,13 @@ func TestNewDefaultDataModel(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetCallbackDiscreteInputs(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.SetCallbackDiscreteInputs(0x0001, func(e Event, a uint16, v bool) {})
 	if err := gotest.Expect(ddm.callbackDiscreteInputs[1]).NotNil(); err != nil {
 		t.Error(err)
@@ -88,7 +100,13 @@ func TestDefaultDataModel_SetCallbackDiscreteInputs(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetCallbackCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.SetCallbackCoils(0x0001, func(e Event, a uint16, v bool) {})
 	if err := gotest.Expect(ddm.callbackCoils[1]).NotNil(); err != nil {
 		t.Error(err)
@@ -96,7 +114,13 @@ func TestDefaultDataModel_SetCallbackCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetCallbackInputRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.SetCallbackInputRegisters(0x0001, func(e Event, a uint16, v uint16) {})
 	if err := gotest.Expect(ddm.callbackInputRegisters[1]).NotNil(); err != nil {
 		t.Error(err)
@@ -104,7 +128,13 @@ func TestDefaultDataModel_SetCallbackInputRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetCallbackHoldingRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.SetCallbackHoldingRegisters(0x0001, func(e Event, a uint16, v uint16) {})
 	if err := gotest.Expect(ddm.callbackHoldingRegisters[1]).NotNil(); err != nil {
 		t.Error(err)
@@ -112,35 +142,65 @@ func TestDefaultDataModel_SetCallbackHoldingRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_LengthDiscreteInputs(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	if err := gotest.Expect(ddm.LengthDiscreteInputs()).Eq(math.MaxUint16); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestDefaultDataModel_LengthCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	if err := gotest.Expect(ddm.LengthCoils()).Eq(math.MaxUint16); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestDefaultDataModel_LengthInputRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	if err := gotest.Expect(ddm.LengthInputRegisters()).Eq(math.MaxUint16); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestDefaultDataModel_LengthHoldingRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	if err := gotest.Expect(ddm.LengthHoldingRegisters()).Eq(math.MaxUint16); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestDefaultDataModel_SetDiscreteInputs(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackDiscreteInputs(0x0001, func(e Event, a uint16, v bool) {
@@ -164,7 +224,13 @@ func TestDefaultDataModel_SetDiscreteInputs(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackCoils(0x0001, func(e Event, a uint16, v bool) {
@@ -188,7 +254,13 @@ func TestDefaultDataModel_SetCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetHoldingRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackHoldingRegisters(0x0001, func(e Event, a uint16, v uint16) {
@@ -212,7 +284,13 @@ func TestDefaultDataModel_SetHoldingRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_SetInputRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackInputRegisters(0x0001, func(e Event, a uint16, v uint16) {
@@ -236,7 +314,13 @@ func TestDefaultDataModel_SetInputRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_GetDiscreteInputs(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackDiscreteInputs(0x0001, func(e Event, a uint16, v bool) {
@@ -260,7 +344,13 @@ func TestDefaultDataModel_GetDiscreteInputs(t *testing.T) {
 }
 
 func TestDefaultDataModel_GetCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackCoils(0x0001, func(e Event, a uint16, v bool) {
@@ -284,7 +374,13 @@ func TestDefaultDataModel_GetCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_GetHoldingRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackHoldingRegisters(0x0001, func(e Event, a uint16, v uint16) {
@@ -308,7 +404,13 @@ func TestDefaultDataModel_GetHoldingRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_GetInputRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	wg := new(sync.WaitGroup)
 	wg.Add(1)
 	ddm.SetCallbackInputRegisters(0x0001, func(e Event, a uint16, v uint16) {
@@ -332,7 +434,13 @@ func TestDefaultDataModel_GetInputRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.coils[0] = true
 	ddm.coils[2] = true
 	request := NewRtuRequest([]byte{0x01, 0x01, 0x00, 0x00, 0x00, 0x08, 0x3d, 0xcc})
@@ -350,7 +458,13 @@ func TestDefaultDataModel_ReadCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadDiscreteInputs(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.discreteInputs[0] = true
 	ddm.discreteInputs[1] = true
 	request := NewRtuRequest([]byte{0x01, 0x02, 0x00, 0x00, 0x00, 0x08, 0x79, 0xcc})
@@ -368,7 +482,13 @@ func TestDefaultDataModel_ReadDiscreteInputs(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadHoldingRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.holdingRegisters[0] = 0x0001
 	ddm.holdingRegisters[1] = 0x0002
 	request := NewRtuRequest([]byte{0x01, 0x03, 0x00, 0x00, 0x00, 0x02, 0xc4, 0x0b})
@@ -386,7 +506,13 @@ func TestDefaultDataModel_ReadHoldingRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_ReadInputRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	ddm.inputRegisters[0] = 0x0003
 	ddm.inputRegisters[1] = 0x0004
 	request := NewRtuRequest([]byte{0x01, 0x04, 0x00, 0x00, 0x00, 0x02, 0x71, 0xcb})
@@ -404,7 +530,13 @@ func TestDefaultDataModel_ReadInputRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteSingleCoil(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0x01, 0x05, 0x00, 0x00, 0xff, 0x00, 0x8c, 0x3a})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -420,7 +552,13 @@ func TestDefaultDataModel_WriteSingleCoil(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteSingleRegister(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0x01, 0x06, 0x00, 0x00, 0x01, 0x02, 0x09, 0x9b})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -436,7 +574,13 @@ func TestDefaultDataModel_WriteSingleRegister(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteMultipleCoils(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0x01, 0x0f, 0x00, 0x00, 0x00, 0x02, 0x01, 0x03, 0x9e, 0x96})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -455,7 +599,13 @@ func TestDefaultDataModel_WriteMultipleCoils(t *testing.T) {
 }
 
 func TestDefaultDataModel_WriteMultipleRegisters(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0x01, 0x10, 0x00, 0x00, 0x00, 0x02, 0x04, 0x00, 0x01, 0x00, 0x02, 0x23, 0xae})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -474,7 +624,13 @@ func TestDefaultDataModel_WriteMultipleRegisters(t *testing.T) {
 }
 
 func TestDefaultDataModel_Handler(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0xff, 0x05, 0x00, 0x00, 0xff, 0x00, 0x99, 0xe4})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
@@ -495,7 +651,13 @@ func TestDefaultDataModel_Handler(t *testing.T) {
 }
 
 func TestDefaultDataModel_HandlerError(t *testing.T) {
-	ddm := NewDefaultDataModel(0x01)
+	ddm := NewDefaultDataModel(&Config{
+		SlaveId:              0x01,
+		SizeDiscreteInputs:   math.MaxUint16,
+		SizeCoils:            math.MaxUint16,
+		SizeInputRegisters:   math.MaxUint16,
+		SizeHoldingRegisters: math.MaxUint16,
+	})
 	request := NewRtuRequest([]byte{0x01, 0x00, 0x00, 0x00, 0xff, 0x00, 0x40, 0x3a})
 
 	if err := gotest.Expect(request.Parse()).NotError(); err != nil {
