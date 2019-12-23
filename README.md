@@ -5,20 +5,30 @@
     package main
     
     import (
-    	"github.com/goburrow/serial"
-    	"github.com/schnack/mbslave/mbslave"
+    	"github.com/schnack/mbslave"
     	"github.com/sirupsen/logrus"
+    	"go.bug.st/serial"
+    	"math"
     )
     
-    func main(){
+    func main() {
+    	logrus.SetFormatter(&logrus.TextFormatter{
+    		DisableColors:   true,
+    		TimestampFormat: "Jan _2 15:04:05.000",
+    	})
     	logrus.SetLevel(logrus.DebugLevel)
-    	logrus.Fatal(mbslave.NewRtuServer(serial.Config{
-    		Address:  "/dev/ttyUSB1",
+    	logrus.Fatal(mbslave.NewRtuServer(&mbslave.Config{
+    		Port:     "/dev/ttyUSB0",
     		BaudRate: 9600,
+    		Parity:   serial.NoParity,
     		DataBits: 8,
-    		StopBits: 1,
-    		Parity:   "N",
-    		Timeout:  1 * time.Hour,
-    	}, mbslave.NewDefaultDataModel(0xb1)).Listen())
+    		StopBits: serial.TwoStopBits,
+    		//SilentInterval: 50 * time.Millisecond,
     
+    		SlaveId:              0xb1,
+    		SizeDiscreteInputs:   math.MaxUint16,
+    		SizeCoils:            math.MaxUint16,
+    		SizeInputRegisters:   math.MaxUint16,
+    		SizeHoldingRegisters: math.MaxUint16,
+    	}).Listen())
     }
