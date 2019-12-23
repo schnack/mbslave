@@ -1,17 +1,13 @@
 package mbslave
 
-import (
-	"go.bug.st/serial"
-)
-
 type Server struct {
 	DataModel DataModel
 	Transport Transport
 }
 
-func NewRtuServer(config serial.Mode, dataModel DataModel) *Server {
+func NewRtuServer(config *Config) *Server {
 	transport := NewRtuTransport(config)
-	return NewServer(transport, dataModel)
+	return NewServer(transport, NewDefaultDataModel(config))
 }
 
 func NewServer(transport Transport, dataModel DataModel) *Server {

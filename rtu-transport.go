@@ -10,16 +10,16 @@ import (
 )
 
 type RtuTransport struct {
-	serial.Mode
+	*Config
 	handler func(request Request, response Response)
 	Port    serial.Port
 	Log     logrus.FieldLogger
 }
 
-func NewRtuTransport(config serial.Mode) *RtuTransport {
+func NewRtuTransport(config *Config) *RtuTransport {
 	return &RtuTransport{
-		Mode: config,
-		Log:  logrus.StandardLogger(),
+		Config: config,
+		Log:    logrus.StandardLogger(),
 	}
 }
 
@@ -29,11 +29,11 @@ func (rt *RtuTransport) SetHandler(f func(request Request, response Response)) {
 
 func (rt *RtuTransport) Listen() (exitError error) {
 	var err error
-	if rt.Port, err = serial.Open("/dev/ttyUSB0", &rt.Mode); err != nil {
+	if rt.Port, err = serial.Open(rt.Config.Port, &rt.Mode); err != nil {
 		return err
 	}
 	defer rt.Port.Close()
-	rt.Log.Debugf("start listing %s %d %d %d %s ", "com3", rt.BaudRate, rt.DataBits, rt.StopBits, rt.Parity)
+	rt.Log.Debugf("start listing %s %d %d", rt.Config.Port, rt.BaudRate, rt.DataBits)
 
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -85,11 +85,10 @@ func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, w
 		defer wg.Done()
 		b := make([]byte, 255)
 		n, err := port.Read(b)
-		// TODO Первый байт получили засикаем время фрейма и возвращаем фрейм в канал
 		if n != 0 {
 			mu.Lock()
+			defer mu.Unlock()
 			data.Write(b[:n])
-			mu.Unlock()
 			c <- err
 		} else {
 			c <- fmt.Errorf("unable to read data from serial port")
@@ -102,6 +101,9 @@ func (*RtuTransport) read(port serial.Port, data *bytes.Buffer, mu sync.Mutex, w
 func (*RtuTransport) getFrame(buff *bytes.Buffer, mu sync.Mutex) []byte {
 	mu.Lock()
 	defer mu.Unlock()
+	if buff.Len() == 0 {
+		return nil
+	}
 	defer buff.Reset()
 	return buff.Bytes()
 }

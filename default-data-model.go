@@ -3,7 +3,6 @@ package mbslave
 import (
 	"encoding/binary"
 	"fmt"
-	"math"
 	"sync"
 )
 
@@ -32,18 +31,18 @@ type DefaultDataModel struct {
 	muHoldingRegisters sync.RWMutex
 }
 
-func NewDefaultDataModel(slaveId uint8) *DefaultDataModel {
+func NewDefaultDataModel(config *Config) *DefaultDataModel {
 	dm := &DefaultDataModel{
-		discreteInputs:           make([]bool, math.MaxUint16),
-		coils:                    make([]bool, math.MaxUint16),
-		inputRegisters:           make([]uint16, math.MaxUint16),
-		holdingRegisters:         make([]uint16, math.MaxUint16),
-		callbackDiscreteInputs:   make([]func(event Event, addr uint16, value bool), math.MaxUint16),
-		callbackCoils:            make([]func(event Event, addr uint16, value bool), math.MaxUint16),
-		callbackInputRegisters:   make([]func(event Event, addr uint16, value uint16), math.MaxUint16),
-		callbackHoldingRegisters: make([]func(event Event, addr uint16, value uint16), math.MaxUint16),
+		discreteInputs:           make([]bool, config.SizeDiscreteInputs),
+		coils:                    make([]bool, config.SizeCoils),
+		inputRegisters:           make([]uint16, config.SizeInputRegisters),
+		holdingRegisters:         make([]uint16, config.SizeHoldingRegisters),
+		callbackDiscreteInputs:   make([]func(event Event, addr uint16, value bool), config.SizeDiscreteInputs),
+		callbackCoils:            make([]func(event Event, addr uint16, value bool), config.SizeCoils),
+		callbackInputRegisters:   make([]func(event Event, addr uint16, value uint16), config.SizeInputRegisters),
+		callbackHoldingRegisters: make([]func(event Event, addr uint16, value uint16), config.SizeHoldingRegisters),
 	}
-	dm.SetSlaveId(slaveId)
+	dm.SetSlaveId(config.SlaveId)
 	dm.SetFunction(FuncReadCoils, dm.ReadCoils)
 	dm.SetFunction(FuncReadDiscreteInputs, dm.ReadDiscreteInputs)
 	dm.SetFunction(FuncReadHoldingRegisters, dm.ReadHoldingRegisters)
